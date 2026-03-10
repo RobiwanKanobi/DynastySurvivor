@@ -19,6 +19,8 @@ var is_game_over := false
 
 var difficulty := 1.0
 var base_spawn_interval := 1.5
+var enemy_hp_mult := 1.0
+var paused_by_test_panel := false
 
 var enemy_defs := {
 	"bat": {"hp": 15.0, "speed": 110.0, "damage": 5.0, "xp": 1,
@@ -103,6 +105,8 @@ func _build_ui() -> void:
 	test_panel.process_mode = Node.PROCESS_MODE_ALWAYS
 	ui_layer.add_child(test_panel)
 	test_panel.spawn_interval_changed.connect(_on_spawn_interval_changed)
+	test_panel.enemy_hp_mult_changed.connect(_on_enemy_hp_mult_changed)
+	test_panel.panel_toggled.connect(_on_test_panel_toggled)
 	test_panel.set_spawn_interval(base_spawn_interval)
 
 
@@ -161,7 +165,7 @@ func _spawn_enemy() -> void:
 	var pos := player.global_position + Vector2(cos(angle), sin(angle)) * dist
 
 	var data: Dictionary = enemy_defs[type_name].duplicate()
-	data["hp"] *= difficulty
+	data["hp"] *= difficulty * enemy_hp_mult
 	data["speed"] = min(data["speed"] * (1.0 + (difficulty - 1.0) * 0.3), data["speed"] * 2.0)
 
 	var enemy := CharacterBody2D.new()
@@ -245,6 +249,18 @@ func _on_upgrade_chosen() -> void:
 
 func _on_spawn_interval_changed(value: float) -> void:
 	base_spawn_interval = value
+
+
+func _on_enemy_hp_mult_changed(value: float) -> void:
+	enemy_hp_mult = value
+
+
+func _on_test_panel_toggled(opened: bool) -> void:
+	paused_by_test_panel = opened
+	if opened:
+		get_tree().paused = true
+	elif not is_game_over and not level_up_ui.visible:
+		get_tree().paused = false
 
 
 func _on_player_died() -> void:
