@@ -2,7 +2,7 @@
 
 ## Cursor Cloud specific instructions
 
-This is a **Godot 4.6 game project** ("Ant Hill" idle/simulation game) written in GDScript. There are no package managers, Docker containers, databases, or backend services.
+This is a **Godot 4.6 game project** ("Dynasty Survivors" — a Vampire Survivors-like auto-shooter set in Chinese history and mythology) written in GDScript. There are no package managers, Docker containers, databases, or backend services.
 
 ### Engine
 
@@ -12,10 +12,12 @@ This is a **Godot 4.6 game project** ("Ant Hill" idle/simulation game) written i
 
 | Path | Purpose |
 |---|---|
-| `project.godot` | Godot project config; main scene is `ant_hill/ant_hill_game.tscn` |
-| `ant_hill/` | All game scenes and GDScript source files |
+| `project.godot` | Godot project config; main scene is `scenes/main_menu.tscn` |
+| `scenes/` | All game scenes (.tscn) |
+| `scripts/` | All GDScript source files (.gd) |
+| `assets/` | Sprites, audio, fonts, and other raw assets |
 | `addons/gdai-mcp-plugin-godot/` | GDAI MCP editor plugin (optional; binary not included — gracefully no-ops) |
-| `Builds/` | Web export output directory |
+| `Builds/` | Web export output directory (git-ignored) |
 | `export_presets.cfg` | Godot export preset for Web |
 
 ### Running the game
@@ -39,7 +41,7 @@ This is a **Godot 4.6 game project** ("Ant Hill" idle/simulation game) written i
 ### Linting / validation
 
 - GDScript syntax check: `godot --headless --check-only --script <file.gd>`
-- Validate all game scripts: `for f in ant_hill/*.gd; do godot --headless --check-only --script "$f"; done`
+- Validate all game scripts: `for f in scripts/*.gd; do godot --headless --check-only --script "$f"; done`
 
 ### Gotchas
 
