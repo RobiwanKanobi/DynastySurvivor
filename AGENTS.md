@@ -12,7 +12,7 @@ This is a **Godot 4.6 game project** ("Dynasty Survivors" — a Vampire Survivor
 
 | Path | Purpose |
 |---|---|
-| `project.godot` | Godot project config; main scene is `scenes/main_menu.tscn` |
+| `project.godot` | Godot project config; main scene is `scenes/main.tscn` |
 | `scenes/` | All game scenes (.tscn) |
 | `scripts/` | All GDScript source files (.gd) |
 | `assets/` | Sprites, audio, fonts, and other raw assets |
