@@ -10,6 +10,7 @@ var ui_layer: CanvasLayer
 var hud: Control
 var level_up_ui: Control
 var game_over_ui: Control
+var test_panel: Control
 
 var game_time := 0.0
 var spawn_timer := 0.0
@@ -95,6 +96,14 @@ func _build_ui() -> void:
 	game_over_ui.visible = false
 	game_over_ui.process_mode = Node.PROCESS_MODE_ALWAYS
 	ui_layer.add_child(game_over_ui)
+
+	test_panel = Control.new()
+	test_panel.set_script(preload("res://scripts/test_panel.gd"))
+	test_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	test_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	ui_layer.add_child(test_panel)
+	test_panel.spawn_interval_changed.connect(_on_spawn_interval_changed)
+	test_panel.set_spawn_interval(base_spawn_interval)
 
 
 func _process(delta: float) -> void:
@@ -232,6 +241,10 @@ func _on_upgrade_chosen() -> void:
 		level_up_ui.show_choices(player)
 	else:
 		get_tree().paused = false
+
+
+func _on_spawn_interval_changed(value: float) -> void:
+	base_spawn_interval = value
 
 
 func _on_player_died() -> void:

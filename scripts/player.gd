@@ -29,6 +29,9 @@ var weapon_timers: Array[float] = []
 var invincible := false
 var inv_timer := 0.0
 
+var touch_active := false
+var touch_position := Vector2.ZERO
+
 var game_node: Node = null
 
 
@@ -63,6 +66,22 @@ func _create_pickup_area() -> void:
 	add_child(area)
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			touch_active = event.pressed
+			if event.pressed:
+				touch_position = get_global_mouse_position()
+	elif event is InputEventMouseMotion and touch_active:
+		touch_position = get_global_mouse_position()
+	elif event is InputEventScreenTouch:
+		touch_active = event.pressed
+		if event.pressed:
+			touch_position = get_canvas_transform().affine_inverse() * event.position
+	elif event is InputEventScreenDrag and touch_active:
+		touch_position = get_canvas_transform().affine_inverse() * event.position
+
+
 func _physics_process(delta: float) -> void:
 	var dir := Vector2.ZERO
 	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
@@ -73,6 +92,12 @@ func _physics_process(delta: float) -> void:
 		dir.y -= 1
 	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):
 		dir.y += 1
+
+	if dir == Vector2.ZERO and touch_active:
+		var to_target := touch_position - global_position
+		if to_target.length() > 8.0:
+			dir = to_target.normalized()
+
 	velocity = dir.normalized() * BASE_SPEED * speed_mult
 	move_and_slide()
 
