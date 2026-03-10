@@ -48,3 +48,7 @@ This is a **Godot 4.6 game project** ("Dynasty Survivors" — a Vampire Survivor
 - Export templates must be installed at `~/.local/share/godot/export_templates/4.6.1.stable/` before web export will work. The update script handles this.
 - The GDAI MCP plugin prints a warning about missing binaries on every editor/export run — this is harmless.
 - The web export requires COOP/COEP headers; a plain `python3 -m http.server` will not work.
+
+### Git workflow
+
+- **Always merge to `main`** after committing changes. The GitHub Actions workflow (`.github/workflows/godot-web-pages.yml`) only triggers on pushes to `main`, which builds the web export and deploys to GitHub Pages. Changes on feature branches will not be deployed until merged to `main`.
