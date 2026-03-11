@@ -5,6 +5,7 @@ signal enemy_hp_mult_changed(value: float)
 signal panel_toggled(opened: bool)
 signal army_size_changed(value: int)
 signal camera_angle_scrolled(delta: float)
+signal art_toggled(enabled: bool)
 
 var panel: PanelContainer
 var is_open := false
@@ -14,6 +15,7 @@ var hp_label: Label
 var hp_slider: HSlider
 var army_label: Label
 var army_slider: HSlider
+var art_check: CheckButton
 
 
 func _ready() -> void:
@@ -136,6 +138,16 @@ func _build_panel() -> void:
 	army_slider.value_changed.connect(_on_army_changed)
 	vbox.add_child(army_slider)
 
+	var sep2 := HSeparator.new()
+	vbox.add_child(sep2)
+
+	art_check = CheckButton.new()
+	art_check.text = "Use Art"
+	art_check.button_pressed = false
+	art_check.add_theme_font_size_override("font_size", 13)
+	art_check.toggled.connect(_on_art_toggled)
+	vbox.add_child(art_check)
+
 
 func _toggle() -> void:
 	is_open = !is_open
@@ -163,6 +175,10 @@ func set_spawn_interval(value: float) -> void:
 	if spawn_slider:
 		spawn_slider.value = value
 		spawn_label.text = "Spawn Interval: %.2fs" % value
+
+
+func _on_art_toggled(pressed: bool) -> void:
+	art_toggled.emit(pressed)
 
 
 func set_army_size(value: int) -> void:

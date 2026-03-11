@@ -11,9 +11,21 @@ var size := 24.0
 var color := Color(0.3, 0.65, 0.2)
 
 var flash_timer := 0.0
+var texture_name := ""
+var _tex: Texture2D
+
+static var _bat_tex: Texture2D
+static var _golem_tex: Texture2D
 
 
 func _ready() -> void:
+	if not _bat_tex:
+		_bat_tex = load("res://assets/bat.png") as Texture2D
+	if not _golem_tex:
+		_golem_tex = load("res://assets/golem.png") as Texture2D
+	match texture_name:
+		"bat": _tex = _bat_tex
+		"golem": _tex = _golem_tex
 	add_to_group("enemies")
 	collision_layer = 2
 	collision_mask = 0
@@ -47,11 +59,21 @@ func _physics_process(delta: float) -> void:
 func _draw() -> void:
 	if get_tree().get_meta("show_shadows", false):
 		_draw_shadow()
+	var use_art: bool = get_tree().get_meta("use_art", false)
 	var c := color
 	if flash_timer > 0:
 		c = Color.WHITE
 	var half := size / 2.0
-	draw_rect(Rect2(-half, -half, size, size), c)
+	if use_art and _tex:
+		var ys: float = get_tree().get_meta("y_scale", 1.0)
+		var y_comp: float = 1.0 / ys if ys < 0.98 else 1.0
+		var sprite_w: float = size * 2.5
+		var sprite_h: float = sprite_w * y_comp
+		var tint := Color(1, 1, 1) if flash_timer <= 0 else Color(3, 3, 3)
+		draw_texture_rect(_tex, Rect2(-sprite_w / 2, -sprite_h, sprite_w, sprite_h),
+			false, tint)
+	else:
+		draw_rect(Rect2(-half, -half, size, size), c)
 	if hp < max_hp:
 		var bar_w := size
 		var bar_h := 3.0

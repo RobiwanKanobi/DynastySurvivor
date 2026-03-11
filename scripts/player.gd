@@ -34,8 +34,12 @@ var touch_position := Vector2.ZERO
 
 var game_node: Node = null
 
+var _tex: Texture2D
+const SPRITE_SIZE := 64.0
+
 
 func _ready() -> void:
+	_tex = load("res://assets/player.png") as Texture2D
 	add_to_group("player")
 	collision_layer = 1
 	collision_mask = 0
@@ -114,13 +118,22 @@ func _physics_process(delta: float) -> void:
 func _draw() -> void:
 	if get_tree().get_meta("show_shadows", false):
 		_draw_shadow()
+	var use_art: bool = get_tree().get_meta("use_art", false)
 	var alpha := 1.0
 	if invincible and fmod(inv_timer, 0.15) < 0.075:
 		alpha = 0.3
-	draw_rect(Rect2(-12, -12, 24, 24), Color(1, 1, 1, alpha))
-	draw_rect(Rect2(-7, -6, 4, 4), Color(0.2, 0.6, 1.0, alpha))
-	draw_rect(Rect2(3, -6, 4, 4), Color(0.2, 0.6, 1.0, alpha))
-	draw_rect(Rect2(-4, 4, 8, 2), Color(0.8, 0.8, 0.8, alpha))
+	if use_art and _tex:
+		var ys: float = get_tree().get_meta("y_scale", 1.0)
+		var y_comp: float = 1.0 / ys if ys < 0.98 else 1.0
+		var w := SPRITE_SIZE
+		var h := SPRITE_SIZE * y_comp
+		draw_texture_rect(_tex, Rect2(-w / 2, -h, w, h),
+			false, Color(1, 1, 1, alpha))
+	else:
+		draw_rect(Rect2(-12, -12, 24, 24), Color(1, 1, 1, alpha))
+		draw_rect(Rect2(-7, -6, 4, 4), Color(0.2, 0.6, 1.0, alpha))
+		draw_rect(Rect2(3, -6, 4, 4), Color(0.2, 0.6, 1.0, alpha))
+		draw_rect(Rect2(-4, 4, 8, 2), Color(0.8, 0.8, 0.8, alpha))
 
 
 func _draw_shadow() -> void:

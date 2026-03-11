@@ -91,9 +91,14 @@ func _build_camera() -> void:
 	player.add_child(camera)
 
 
+var ground_tex: Texture2D
+
+
 func _apply_camera_mode() -> void:
 	scale.y = y_scale_val
+	get_tree().set_meta("y_scale", y_scale_val)
 	_update_ysort_and_shadows()
+	ground_tex = load("res://assets/ground_tile.png") as Texture2D
 
 
 func _update_ysort_and_shadows() -> void:
@@ -142,6 +147,7 @@ func _build_ui() -> void:
 	test_panel.panel_toggled.connect(_on_test_panel_toggled)
 	test_panel.army_size_changed.connect(_on_army_size_changed)
 	test_panel.camera_angle_scrolled.connect(_on_camera_angle_scrolled)
+	test_panel.art_toggled.connect(_on_art_toggled)
 	test_panel.set_spawn_interval(base_spawn_interval)
 	test_panel.set_army_size(allies_node.get_child_count())
 
@@ -184,20 +190,37 @@ func _draw_flat_grid() -> void:
 	var center := player.global_position
 	var hw := 800.0
 	var hh := 500.0
-	draw_rect(Rect2(center.x - hw, center.y - hh, hw * 2, hh * 2),
-		Color(0.08, 0.08, 0.12))
-	var gs := 64.0
-	var gc := Color(0.12, 0.12, 0.18)
-	var sx := snappedf(center.x - hw, gs) - gs
-	var x := sx
-	while x <= center.x + hw + gs:
-		draw_line(Vector2(x, center.y - hh - gs), Vector2(x, center.y + hh + gs), gc, 1.0)
-		x += gs
-	var sy := snappedf(center.y - hh, gs) - gs
-	var y := sy
-	while y <= center.y + hh + gs:
-		draw_line(Vector2(center.x - hw - gs, y), Vector2(center.x + hw + gs, y), gc, 1.0)
-		y += gs
+	var use_art: bool = get_tree().get_meta("use_art", false)
+	if use_art and ground_tex:
+		_draw_tiled_ground(center, hw, hh)
+	else:
+		draw_rect(Rect2(center.x - hw, center.y - hh, hw * 2, hh * 2),
+			Color(0.08, 0.08, 0.12))
+		var gs := 64.0
+		var gc := Color(0.12, 0.12, 0.18)
+		var sx := snappedf(center.x - hw, gs) - gs
+		var x := sx
+		while x <= center.x + hw + gs:
+			draw_line(Vector2(x, center.y - hh - gs), Vector2(x, center.y + hh + gs), gc, 1.0)
+			x += gs
+		var sy := snappedf(center.y - hh, gs) - gs
+		var y := sy
+		while y <= center.y + hh + gs:
+			draw_line(Vector2(center.x - hw - gs, y), Vector2(center.x + hw + gs, y), gc, 1.0)
+			y += gs
+
+
+func _draw_tiled_ground(center: Vector2, hw: float, hh: float) -> void:
+	var ts := 256.0
+	var sx := snappedf(center.x - hw, ts) - ts
+	var sy := snappedf(center.y - hh, ts) - ts
+	var tx := sx
+	while tx < center.x + hw + ts:
+		var ty := sy
+		while ty < center.y + hh + ts:
+			draw_texture_rect(ground_tex, Rect2(tx, ty, ts, ts), false)
+			ty += ts
+		tx += ts
 
 
 func _draw_perspective_grid() -> void:
@@ -205,6 +228,7 @@ func _draw_perspective_grid() -> void:
 	var hw := 800.0
 	var hh: float = 600.0 / y_scale_val
 	var narrow := _get_narrow()
+	var use_art: bool = get_tree().get_meta("use_art", false)
 
 	var top_y := center.y - hh
 	var bot_y := center.y + hh
@@ -212,6 +236,10 @@ func _draw_perspective_grid() -> void:
 
 	draw_rect(Rect2(center.x - hw - 100, top_y - 100,
 		(hw + 100) * 2, full_h + 200), Color(0.03, 0.03, 0.06))
+
+	if use_art and ground_tex:
+		_draw_tiled_ground(center, hw, hh)
+	
 
 	var strips := 20
 	for i in range(strips):
@@ -313,6 +341,7 @@ func _create_enemy(type_name: String, pos: Vector2) -> void:
 	enemy.xp_value = data["xp"]
 	enemy.size = data["size"]
 	enemy.color = data["color"]
+	enemy.texture_name = type_name
 	enemies_node.add_child(enemy)
 	enemy.died.connect(_on_enemy_died)
 
@@ -418,9 +447,14 @@ func _on_army_size_changed(value: int) -> void:
 	_set_army_size(value)
 
 
+func _on_art_toggled(enabled: bool) -> void:
+	get_tree().set_meta("use_art", enabled)
+
+
 func _on_camera_angle_scrolled(delta: float) -> void:
 	y_scale_val = clampf(y_scale_val + delta, 0.3, 1.0)
 	scale.y = y_scale_val
+	get_tree().set_meta("y_scale", y_scale_val)
 	_update_ysort_and_shadows()
 
 
