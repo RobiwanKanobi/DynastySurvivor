@@ -45,6 +45,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
+	if get_tree().get_meta("show_shadows", false):
+		_draw_shadow()
 	var c := color
 	if flash_timer > 0:
 		c = Color.WHITE
@@ -64,6 +66,15 @@ func take_damage(amount: float) -> void:
 	if hp <= 0:
 		died.emit(global_position, xp_value)
 		queue_free()
+
+
+func _draw_shadow() -> void:
+	var half := size / 2.0
+	var pts := PackedVector2Array()
+	for i in range(16):
+		var a := TAU * i / 16.0
+		pts.append(Vector2(cos(a) * half * 0.9, sin(a) * half * 0.3 + half))
+	draw_colored_polygon(pts, Color(0, 0, 0, 0.2))
 
 
 func _get_player() -> Node2D:

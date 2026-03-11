@@ -112,6 +112,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
+	if get_tree().get_meta("show_shadows", false):
+		_draw_shadow()
 	var alpha := 1.0
 	if invincible and fmod(inv_timer, 0.15) < 0.075:
 		alpha = 0.3
@@ -119,6 +121,14 @@ func _draw() -> void:
 	draw_rect(Rect2(-7, -6, 4, 4), Color(0.2, 0.6, 1.0, alpha))
 	draw_rect(Rect2(3, -6, 4, 4), Color(0.2, 0.6, 1.0, alpha))
 	draw_rect(Rect2(-4, 4, 8, 2), Color(0.8, 0.8, 0.8, alpha))
+
+
+func _draw_shadow() -> void:
+	var pts := PackedVector2Array()
+	for i in range(16):
+		var a := TAU * i / 16.0
+		pts.append(Vector2(cos(a) * 12.0, sin(a) * 4.0 + 12.0))
+	draw_colored_polygon(pts, Color(0, 0, 0, 0.2))
 
 
 func _check_enemy_contact() -> void:

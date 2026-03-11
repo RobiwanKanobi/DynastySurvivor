@@ -6,6 +6,7 @@ var enemies_node: Node2D
 var projectiles_node: Node2D
 var gems_node: Node2D
 var effects_node: Node2D
+var allies_node: Node2D
 var ui_layer: CanvasLayer
 var hud: Control
 var level_up_ui: Control
@@ -22,6 +23,12 @@ var base_spawn_interval := 1.5
 var enemy_hp_mult := 1.0
 var paused_by_test_panel := false
 
+var camera_mode := 0
+var spawn_mode := 0
+var y_scale_val := 1.0
+
+const Y_SCALES := [1.0, 0.6, 0.7, 0.5]
+
 var enemy_defs := {
 	"bat": {"hp": 15.0, "speed": 110.0, "damage": 5.0, "xp": 1,
 		"size": 16.0, "color": Color(0.9, 0.25, 0.2)},
@@ -33,10 +40,19 @@ var enemy_defs := {
 
 
 func _ready() -> void:
+	camera_mode = get_tree().get_meta("camera_mode", 0)
+	spawn_mode = get_tree().get_meta("spawn_mode", 0)
+	y_scale_val = Y_SCALES[camera_mode] if camera_mode < Y_SCALES.size() else 1.0
+	get_tree().set_meta("show_shadows", camera_mode > 0)
+
 	_build_containers()
 	_build_player()
 	_build_camera()
+	_apply_camera_mode()
 	_build_ui()
+
+	if spawn_mode == 2:
+		_spawn_initial_allies()
 
 
 func _build_containers() -> void:
@@ -52,6 +68,9 @@ func _build_containers() -> void:
 	effects_node = Node2D.new()
 	effects_node.name = "Effects"
 	add_child(effects_node)
+	allies_node = Node2D.new()
+	allies_node.name = "Allies"
+	add_child(allies_node)
 
 
 func _build_player() -> void:
@@ -71,6 +90,16 @@ func _build_camera() -> void:
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 8.0
 	player.add_child(camera)
+
+
+func _apply_camera_mode() -> void:
+	scale.y = y_scale_val
+	if camera_mode > 0:
+		enemies_node.y_sort_enabled = true
+		projectiles_node.y_sort_enabled = true
+		gems_node.y_sort_enabled = true
+		effects_node.y_sort_enabled = true
+		allies_node.y_sort_enabled = true
 
 
 func _build_ui() -> void:
@@ -120,7 +149,10 @@ func _process(delta: float) -> void:
 	spawn_timer += delta
 	if spawn_timer >= spawn_interval and enemies_node.get_child_count() < 150:
 		spawn_timer = 0.0
-		_spawn_enemy()
+		if spawn_mode == 0:
+			_spawn_enemy_classic()
+		else:
+			_spawn_enemy_battlefield()
 
 	hud.update_time(game_time)
 	hud.update_kills(kills)
@@ -133,7 +165,7 @@ func _draw() -> void:
 		return
 	var center := player.global_position
 	var hw := 800.0
-	var hh := 500.0
+	var hh: float = 500.0 / y_scale_val
 	draw_rect(Rect2(center.x - hw, center.y - hh, hw * 2, hh * 2),
 		Color(0.08, 0.08, 0.12))
 	var gs := 64.0
@@ -150,23 +182,37 @@ func _draw() -> void:
 		y += gs
 
 
-func _spawn_enemy() -> void:
-	var type_name := "bat"
-	var r := randf()
-	if game_time > 90.0 and r < 0.2:
-		type_name = "golem"
-	elif game_time > 60.0 and r < 0.15:
-		type_name = "golem"
-	elif game_time > 30.0 and r < 0.35:
-		type_name = "zombie"
-
+func _spawn_enemy_classic() -> void:
+	var type_name := _pick_enemy_type()
 	var angle := randf() * TAU
 	var dist := 650.0 + randf() * 150.0
 	var pos := player.global_position + Vector2(cos(angle), sin(angle)) * dist
+	_create_enemy(type_name, pos)
 
+
+func _spawn_enemy_battlefield() -> void:
+	var type_name := _pick_enemy_type()
+	var angle := randf_range(-1.2, 1.2)
+	var dist := 600.0 + randf() * 250.0
+	var pos := player.global_position + Vector2(cos(angle) * dist, sin(angle) * dist)
+	_create_enemy(type_name, pos)
+
+
+func _pick_enemy_type() -> String:
+	var r := randf()
+	if game_time > 90.0 and r < 0.2:
+		return "golem"
+	elif game_time > 60.0 and r < 0.15:
+		return "golem"
+	elif game_time > 30.0 and r < 0.35:
+		return "zombie"
+	return "bat"
+
+
+func _create_enemy(type_name: String, pos: Vector2) -> void:
 	var data: Dictionary = enemy_defs[type_name].duplicate()
 	data["hp"] *= difficulty * enemy_hp_mult
-	data["speed"] = min(data["speed"] * (1.0 + (difficulty - 1.0) * 0.3), data["speed"] * 2.0)
+	data["speed"] = minf(data["speed"] * (1.0 + (difficulty - 1.0) * 0.3), data["speed"] * 2.0)
 
 	var enemy := CharacterBody2D.new()
 	enemy.set_script(preload("res://scripts/enemy.gd"))
@@ -180,6 +226,21 @@ func _spawn_enemy() -> void:
 	enemy.color = data["color"]
 	enemies_node.add_child(enemy)
 	enemy.died.connect(_on_enemy_died)
+
+
+func _spawn_initial_allies() -> void:
+	for i in range(20):
+		var row: int = i / 5
+		var col: int = i % 5
+		var offset := Vector2(
+			-(row + 1) * 45.0 - 30.0,
+			(col - 2) * 40.0
+		)
+		var ally := CharacterBody2D.new()
+		ally.set_script(preload("res://scripts/ally.gd"))
+		ally.global_position = player.global_position + offset
+		ally.formation_offset = offset
+		allies_node.add_child(ally)
 
 
 func spawn_projectile(pos: Vector2, dir: Vector2, spd: float, dmg: float,
