@@ -192,7 +192,8 @@ func _draw_flat_grid() -> void:
 	var hh := 500.0
 	var use_art: bool = get_tree().get_meta("use_art", false)
 	if use_art and ground_tex:
-		_draw_tiled_ground(center, hw, hh)
+		_draw_tiled_ground(center, hw * 1.2, hh * 1.2)
+		return
 	else:
 		draw_rect(Rect2(center.x - hw, center.y - hh, hw * 2, hh * 2),
 			Color(0.08, 0.08, 0.12))
@@ -234,12 +235,12 @@ func _draw_perspective_grid() -> void:
 	var bot_y := center.y + hh
 	var full_h := bot_y - top_y
 
+	if use_art and ground_tex:
+		_draw_tiled_ground(center, hw * 1.5, hh * 1.5)
+		return
+
 	draw_rect(Rect2(center.x - hw - 100, top_y - 100,
 		(hw + 100) * 2, full_h + 200), Color(0.03, 0.03, 0.06))
-
-	if use_art and ground_tex:
-		_draw_tiled_ground(center, hw, hh)
-	
 
 	var strips := 20
 	for i in range(strips):
