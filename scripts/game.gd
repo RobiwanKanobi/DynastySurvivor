@@ -163,23 +163,101 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if not player:
 		return
+	if camera_mode == 0:
+		_draw_flat_grid()
+	else:
+		_draw_perspective_grid()
+
+
+func _draw_flat_grid() -> void:
 	var center := player.global_position
 	var hw := 800.0
-	var hh: float = 500.0 / y_scale_val
+	var hh := 500.0
 	draw_rect(Rect2(center.x - hw, center.y - hh, hw * 2, hh * 2),
 		Color(0.08, 0.08, 0.12))
 	var gs := 64.0
-	var sx := snappedf(center.x - hw, gs) - gs
-	var sy := snappedf(center.y - hh, gs) - gs
 	var gc := Color(0.12, 0.12, 0.18)
+	var sx := snappedf(center.x - hw, gs) - gs
 	var x := sx
 	while x <= center.x + hw + gs:
 		draw_line(Vector2(x, center.y - hh - gs), Vector2(x, center.y + hh + gs), gc, 1.0)
 		x += gs
+	var sy := snappedf(center.y - hh, gs) - gs
 	var y := sy
 	while y <= center.y + hh + gs:
 		draw_line(Vector2(center.x - hw - gs, y), Vector2(center.x + hw + gs, y), gc, 1.0)
 		y += gs
+
+
+func _draw_perspective_grid() -> void:
+	var center := player.global_position
+	var hw := 800.0
+	var hh: float = 600.0 / y_scale_val
+	var narrow: float = [0.0, 0.65, 0.55, 0.35][camera_mode]
+
+	var top_y := center.y - hh
+	var bot_y := center.y + hh
+	var full_h := bot_y - top_y
+
+	draw_rect(Rect2(center.x - hw - 100, top_y - 100,
+		(hw + 100) * 2, full_h + 200), Color(0.03, 0.03, 0.06))
+
+	var strips := 20
+	for i in range(strips):
+		var t0 := float(i) / strips
+		var t1 := float(i + 1) / strips
+		var y0 := lerpf(bot_y, top_y, t0)
+		var y1 := lerpf(bot_y, top_y, t1)
+		var s0 := lerpf(1.0, narrow, t0)
+		var s1 := lerpf(1.0, narrow, t1)
+		var b0 := lerpf(0.13, 0.05, t0)
+		var b1 := lerpf(0.13, 0.05, t1)
+		draw_polygon(
+			PackedVector2Array([
+				Vector2(center.x - hw * s0, y0),
+				Vector2(center.x + hw * s0, y0),
+				Vector2(center.x + hw * s1, y1),
+				Vector2(center.x - hw * s1, y1),
+			]),
+			PackedColorArray([
+				Color(b0, b0, b0 + 0.04),
+				Color(b0, b0, b0 + 0.04),
+				Color(b1, b1, b1 + 0.03),
+				Color(b1, b1, b1 + 0.03),
+			])
+		)
+
+	var gs := 64.0
+	var gc := Color(0.18, 0.18, 0.26)
+	var sy := snappedf(top_y, gs) - gs
+	var gy := sy
+	while gy <= bot_y + gs:
+		var t := clampf((bot_y - gy) / full_h, 0.0, 1.0)
+		var s := lerpf(1.0, narrow, t)
+		var alpha := lerpf(0.45, 0.1, t)
+		draw_line(Vector2(center.x - hw * s, gy),
+			Vector2(center.x + hw * s, gy),
+			Color(gc.r, gc.g, gc.b, alpha), 1.0)
+		gy += gs
+
+	var sx := snappedf(center.x - hw, gs) - gs
+	var gx := sx
+	while gx <= center.x + hw + gs:
+		var x_off := gx - center.x
+		var x_top := center.x + x_off * narrow
+		draw_line(Vector2(x_top, top_y), Vector2(gx, bot_y),
+			Color(gc.r, gc.g, gc.b, 0.3), 1.0)
+		gx += gs
+
+	if camera_mode == 3:
+		for i in range(12):
+			var t := float(i) / 12.0
+			var fy := top_y + full_h * t * 0.15
+			var fa := (1.0 - t) * 0.6
+			var fs := narrow + t * 0.04
+			draw_line(Vector2(center.x - hw * fs, fy),
+				Vector2(center.x + hw * fs, fy),
+				Color(0.05, 0.05, 0.09, fa), 6.0)
 
 
 func _spawn_enemy_classic() -> void:
