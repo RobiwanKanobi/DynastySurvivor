@@ -29,9 +29,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if attracted and is_instance_valid(target):
 		attract_speed += 600.0 * delta
-		var dir := (target.global_position - global_position).normalized()
-		global_position += dir * attract_speed * delta
-		if global_position.distance_to(target.global_position) < 16:
+		var dir := (target.position - position).normalized()
+		position += dir * attract_speed * delta
+		if position.distance_to(target.position) < 16:
 			_do_collect()
 	queue_redraw()
 

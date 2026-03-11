@@ -43,7 +43,6 @@ func _ready() -> void:
 	camera_mode = get_tree().get_meta("camera_mode", 0)
 	spawn_mode = get_tree().get_meta("spawn_mode", 0)
 	y_scale_val = Y_SCALES[camera_mode] if camera_mode < Y_SCALES.size() else 1.0
-	get_tree().set_meta("show_shadows", camera_mode > 0)
 
 	_build_containers()
 	_build_player()
@@ -52,7 +51,7 @@ func _ready() -> void:
 	_build_ui()
 
 	if spawn_mode == 2:
-		_spawn_initial_allies()
+		_set_army_size(20)
 
 
 func _build_containers() -> void:
@@ -94,12 +93,17 @@ func _build_camera() -> void:
 
 func _apply_camera_mode() -> void:
 	scale.y = y_scale_val
-	if camera_mode > 0:
-		enemies_node.y_sort_enabled = true
-		projectiles_node.y_sort_enabled = true
-		gems_node.y_sort_enabled = true
-		effects_node.y_sort_enabled = true
-		allies_node.y_sort_enabled = true
+	_update_ysort_and_shadows()
+
+
+func _update_ysort_and_shadows() -> void:
+	var use_ysort := y_scale_val < 0.98
+	get_tree().set_meta("show_shadows", use_ysort)
+	enemies_node.y_sort_enabled = use_ysort
+	projectiles_node.y_sort_enabled = use_ysort
+	gems_node.y_sort_enabled = use_ysort
+	effects_node.y_sort_enabled = use_ysort
+	allies_node.y_sort_enabled = use_ysort
 
 
 func _build_ui() -> void:
@@ -136,7 +140,10 @@ func _build_ui() -> void:
 	test_panel.spawn_interval_changed.connect(_on_spawn_interval_changed)
 	test_panel.enemy_hp_mult_changed.connect(_on_enemy_hp_mult_changed)
 	test_panel.panel_toggled.connect(_on_test_panel_toggled)
+	test_panel.army_size_changed.connect(_on_army_size_changed)
+	test_panel.camera_angle_scrolled.connect(_on_camera_angle_scrolled)
 	test_panel.set_spawn_interval(base_spawn_interval)
+	test_panel.set_army_size(allies_node.get_child_count())
 
 
 func _process(delta: float) -> void:
@@ -160,10 +167,14 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+func _get_narrow() -> float:
+	return clampf(y_scale_val, 0.2, 1.0)
+
+
 func _draw() -> void:
 	if not player:
 		return
-	if camera_mode == 0:
+	if y_scale_val >= 0.98:
 		_draw_flat_grid()
 	else:
 		_draw_perspective_grid()
@@ -193,7 +204,7 @@ func _draw_perspective_grid() -> void:
 	var center := player.global_position
 	var hw := 800.0
 	var hh: float = 600.0 / y_scale_val
-	var narrow: float = [0.0, 0.65, 0.55, 0.35][camera_mode]
+	var narrow := _get_narrow()
 
 	var top_y := center.y - hh
 	var bot_y := center.y + hh
@@ -249,7 +260,7 @@ func _draw_perspective_grid() -> void:
 			Color(gc.r, gc.g, gc.b, 0.3), 1.0)
 		gx += gs
 
-	if camera_mode == 3:
+	if y_scale_val < 0.55:
 		for i in range(12):
 			var t := float(i) / 12.0
 			var fy := top_y + full_h * t * 0.15
@@ -264,7 +275,7 @@ func _spawn_enemy_classic() -> void:
 	var type_name := _pick_enemy_type()
 	var angle := randf() * TAU
 	var dist := 650.0 + randf() * 150.0
-	var pos := player.global_position + Vector2(cos(angle), sin(angle)) * dist
+	var pos := player.position + Vector2(cos(angle), sin(angle)) * dist
 	_create_enemy(type_name, pos)
 
 
@@ -272,7 +283,7 @@ func _spawn_enemy_battlefield() -> void:
 	var type_name := _pick_enemy_type()
 	var angle := randf_range(-1.2, 1.2)
 	var dist := 600.0 + randf() * 250.0
-	var pos := player.global_position + Vector2(cos(angle) * dist, sin(angle) * dist)
+	var pos := player.position + Vector2(cos(angle) * dist, sin(angle) * dist)
 	_create_enemy(type_name, pos)
 
 
@@ -294,7 +305,7 @@ func _create_enemy(type_name: String, pos: Vector2) -> void:
 
 	var enemy := CharacterBody2D.new()
 	enemy.set_script(preload("res://scripts/enemy.gd"))
-	enemy.global_position = pos
+	enemy.position = pos
 	enemy.hp = data["hp"]
 	enemy.max_hp = data["hp"]
 	enemy.speed = data["speed"]
@@ -306,26 +317,35 @@ func _create_enemy(type_name: String, pos: Vector2) -> void:
 	enemy.died.connect(_on_enemy_died)
 
 
-func _spawn_initial_allies() -> void:
-	for i in range(20):
-		var row: int = i / 5
-		var col: int = i % 5
-		var offset := Vector2(
-			-(row + 1) * 45.0 - 30.0,
-			(col - 2) * 40.0
-		)
-		var ally := CharacterBody2D.new()
-		ally.set_script(preload("res://scripts/ally.gd"))
-		ally.global_position = player.global_position + offset
-		ally.formation_offset = offset
-		allies_node.add_child(ally)
+func _set_army_size(target: int) -> void:
+	var current := allies_node.get_child_count()
+	if target > current:
+		for i in range(target - current):
+			_spawn_single_ally()
+	elif target < current:
+		var to_remove := current - target
+		for i in range(to_remove):
+			if allies_node.get_child_count() > 0:
+				allies_node.get_child(allies_node.get_child_count() - 1).queue_free()
+
+
+func _spawn_single_ally() -> void:
+	var idx := allies_node.get_child_count()
+	var row: int = idx / 5
+	var col: int = idx % 5
+	var offset := Vector2(-(row + 1) * 45.0 - 30.0, (col - 2) * 40.0)
+	var ally := CharacterBody2D.new()
+	ally.set_script(preload("res://scripts/ally.gd"))
+	ally.position = player.position + offset
+	ally.formation_offset = offset
+	allies_node.add_child(ally)
 
 
 func spawn_projectile(pos: Vector2, dir: Vector2, spd: float, dmg: float,
 		prc: int, sz: Vector2, clr: Color) -> void:
 	var proj := Area2D.new()
 	proj.set_script(preload("res://scripts/projectile.gd"))
-	proj.global_position = pos
+	proj.position = pos
 	proj.direction = dir
 	proj.speed = spd
 	proj.damage = dmg
@@ -337,14 +357,14 @@ func spawn_projectile(pos: Vector2, dir: Vector2, spd: float, dmg: float,
 
 func apply_aura_damage(pos: Vector2, radius: float, dmg: float) -> void:
 	for e in get_tree().get_nodes_in_group("enemies"):
-		if pos.distance_to(e.global_position) <= radius:
+		if pos.distance_to(e.position) <= radius:
 			e.take_damage(dmg)
 
 
 func spawn_aura_effect(pos: Vector2, radius: float, clr: Color) -> void:
 	var effect := Node2D.new()
 	effect.set_script(preload("res://scripts/aura_effect.gd"))
-	effect.global_position = pos
+	effect.position = pos
 	effect.radius = radius
 	effect.color = clr
 	effects_node.add_child(effect)
@@ -353,7 +373,7 @@ func spawn_aura_effect(pos: Vector2, radius: float, clr: Color) -> void:
 func spawn_xp_gem(pos: Vector2, value: int) -> void:
 	var gem := Area2D.new()
 	gem.set_script(preload("res://scripts/xp_gem.gd"))
-	gem.global_position = pos
+	gem.position = pos
 	gem.xp_value = value
 	gems_node.add_child(gem)
 
@@ -392,6 +412,16 @@ func _on_spawn_interval_changed(value: float) -> void:
 
 func _on_enemy_hp_mult_changed(value: float) -> void:
 	enemy_hp_mult = value
+
+
+func _on_army_size_changed(value: int) -> void:
+	_set_army_size(value)
+
+
+func _on_camera_angle_scrolled(delta: float) -> void:
+	y_scale_val = clampf(y_scale_val + delta, 0.3, 1.0)
+	scale.y = y_scale_val
+	_update_ysort_and_shadows()
 
 
 func _on_test_panel_toggled(opened: bool) -> void:

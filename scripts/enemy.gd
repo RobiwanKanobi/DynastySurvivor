@@ -31,14 +31,14 @@ func get_half_size() -> float:
 func _physics_process(delta: float) -> void:
 	var player := _get_player()
 	if player:
-		var dir := (player.global_position - global_position).normalized()
+		var dir := (player.position - position).normalized()
 		velocity = dir * speed
 		move_and_slide()
 
 	if flash_timer > 0:
 		flash_timer -= delta
 
-	if player and global_position.distance_to(player.global_position) > 1500:
+	if player and position.distance_to(player.position) > 1500:
 		queue_free()
 
 	queue_redraw()
@@ -64,7 +64,7 @@ func take_damage(amount: float) -> void:
 	hp -= amount
 	flash_timer = 0.1
 	if hp <= 0:
-		died.emit(global_position, xp_value)
+		died.emit(position, xp_value)
 		queue_free()
 
 

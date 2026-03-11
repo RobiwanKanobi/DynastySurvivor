@@ -135,7 +135,7 @@ func _check_enemy_contact() -> void:
 	if invincible:
 		return
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		var dist := global_position.distance_to(enemy.global_position)
+		var dist := position.distance_to(enemy.position)
 		var threshold: float = 12.0 + enemy.get_half_size()
 		if dist < threshold:
 			take_damage(enemy.contact_damage)
@@ -219,7 +219,7 @@ func _fire_projectile(w: Dictionary) -> void:
 	var target := _find_nearest_enemy()
 	if not target:
 		return
-	var dir := (target.global_position - global_position).normalized()
+	var dir := (target.position - position).normalized()
 	var count: int = w["count"] + extra_projectiles
 	var spread := 0.15
 	for idx in range(count):
@@ -227,7 +227,7 @@ func _fire_projectile(w: Dictionary) -> void:
 		if count > 1:
 			offset = (idx - (count - 1) / 2.0) * spread
 		var d := dir.rotated(offset)
-		game_node.spawn_projectile(global_position, d, w["speed"],
+		game_node.spawn_projectile(position, d, w["speed"],
 			w["damage"] * damage_mult, w["pierce"], w["size"], w["color"])
 
 
@@ -235,15 +235,15 @@ func _fire_aura(w: Dictionary) -> void:
 	if not game_node:
 		return
 	var radius: float = w["radius"] * area_mult
-	game_node.apply_aura_damage(global_position, radius, w["damage"] * damage_mult)
-	game_node.spawn_aura_effect(global_position, radius, w["color"])
+	game_node.apply_aura_damage(position, radius, w["damage"] * damage_mult)
+	game_node.spawn_aura_effect(position, radius, w["color"])
 
 
 func _find_nearest_enemy() -> Node2D:
 	var nearest: Node2D = null
 	var best_dist := INF
 	for e in get_tree().get_nodes_in_group("enemies"):
-		var d := global_position.distance_to(e.global_position)
+		var d := position.distance_to(e.position)
 		if d < best_dist:
 			best_dist = d
 			nearest = e

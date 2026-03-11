@@ -30,13 +30,13 @@ func _physics_process(delta: float) -> void:
 	if not player:
 		return
 
-	var target_pos := player.global_position + formation_offset
+	var target_pos := player.position + formation_offset
 	var nearest := _find_nearest_enemy()
 
-	if nearest and global_position.distance_to(nearest.global_position) < 120.0:
-		velocity = (nearest.global_position - global_position).normalized() * speed
+	if nearest and position.distance_to(nearest.position) < 120.0:
+		velocity = (nearest.position - position).normalized() * speed
 	else:
-		var to_target := target_pos - global_position
+		var to_target := target_pos - position
 		if to_target.length() > 25.0:
 			velocity = to_target.normalized() * speed * 0.8
 		else:
@@ -46,7 +46,7 @@ func _physics_process(delta: float) -> void:
 
 	attack_timer += delta
 	if attack_timer >= attack_cooldown and nearest:
-		if global_position.distance_to(nearest.global_position) < attack_range:
+		if position.distance_to(nearest.position) < attack_range:
 			nearest.take_damage(attack_damage)
 			attack_timer = 0.0
 
@@ -80,7 +80,7 @@ func _find_nearest_enemy() -> Node2D:
 	var nearest: Node2D = null
 	var best := INF
 	for e in get_tree().get_nodes_in_group("enemies"):
-		var d := global_position.distance_to(e.global_position)
+		var d := position.distance_to(e.position)
 		if d < best:
 			best = d
 			nearest = e
