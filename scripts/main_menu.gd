@@ -154,4 +154,7 @@ func _on_play() -> void:
 	spawn_mode = sp_btn.get_meta("mode") if sp_btn else 0
 	get_tree().set_meta("camera_mode", camera_mode)
 	get_tree().set_meta("spawn_mode", spawn_mode)
-	get_tree().change_scene_to_file("res://scenes/game.tscn")
+	if camera_mode == 3:
+		get_tree().change_scene_to_file("res://scenes/game_3d.tscn")
+	else:
+		get_tree().change_scene_to_file("res://scenes/game.tscn")

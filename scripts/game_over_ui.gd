@@ -89,7 +89,11 @@ func _add_stat(parent: VBoxContainer, txt: String) -> void:
 
 func _on_restart() -> void:
 	get_tree().paused = false
-	get_tree().change_scene_to_file("res://scenes/game.tscn")
+	var cam: int = get_tree().get_meta("camera_mode", 0)
+	if cam == 3:
+		get_tree().change_scene_to_file("res://scenes/game_3d.tscn")
+	else:
+		get_tree().change_scene_to_file("res://scenes/game.tscn")
 
 
 func _on_menu() -> void:
