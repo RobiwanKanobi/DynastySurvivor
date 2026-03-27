@@ -492,20 +492,7 @@ func _create_enemy(type_name: String, pos: Vector3) -> void:
 		sprite.texture = _make_color_tex(data["color"])
 	enemy.add_child(sprite)
 
-	var script_ref := GDScript.new()
-	script_ref.source_code = '
-extends Node3D
-
-func take_damage_3d(amount: float) -> void:
-	var hp: float = get_meta("hp") - amount
-	set_meta("hp", hp)
-	set_meta("flash", 0.1)
-	if hp <= 0:
-		get_parent().get_parent().call("_on_enemy_died_3d", position, get_meta("xp_value", 1))
-		queue_free()
-'
-	script_ref.reload()
-	enemy.set_script(script_ref)
+	enemy.set_script(preload("res://scripts/enemy_3d.gd"))
 	enemy.set_meta("hp", data["hp"])
 	enemy.set_meta("max_hp", data["hp"])
 	enemy.set_meta("speed", data["speed"])
